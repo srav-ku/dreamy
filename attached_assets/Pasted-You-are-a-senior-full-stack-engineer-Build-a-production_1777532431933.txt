@@ -1,0 +1,261 @@
+You are a senior full-stack engineer. Build a production-ready, minimal, high-quality image gallery platform with a separate admin portal.
+
+Do NOT overcomplicate. Focus on clean architecture, scalability, and modern UI similar to premium platforms (inspired by X/Twitter style: clean, centered, minimal, smooth).
+
+---
+
+# 1. PROJECT OVERVIEW
+
+Create TWO separate apps:
+
+1. Public Website (for users)
+2. Admin Portal (completely separate app, not included inside main site UI)
+
+Both should share the same backend (Cloudflare Workers API + Cloudflare D1 database + Cloudinary for images).
+
+No authentication for users.
+Admin portal can use simple password protection (env-based).
+
+No chat feature.
+
+---
+
+# 2. TECH STACK (STRICT)
+
+Frontend:
+
+* React (with Vite)
+* Tailwind CSS
+* React Router
+* Axios or Fetch API
+
+Hosting:
+
+* Cloudflare Pages
+
+Backend:
+
+* Cloudflare Workers (API layer)
+
+Database:
+
+* Cloudflare D1 (SQLite)
+
+Image Storage:
+
+* Cloudinary
+
+---
+
+# 3. DATABASE DESIGN (Cloudflare D1)
+
+Create tables:
+
+### persons
+
+* id (primary key)
+* name (text)
+* slug (unique)
+* profile_image (text)
+* bio (text)
+* created_at (timestamp)
+
+### albums
+
+* id
+* person_id (foreign key)
+* name
+* slug
+
+### images
+
+* id
+* album_id (foreign key)
+* image_url (text)
+* thumbnail_url (text)
+* created_at
+
+---
+
+# 4. BACKEND (Cloudflare Workers API)
+
+Create REST API endpoints:
+
+### Public:
+
+* GET /api/persons
+* GET /api/person/:slug
+* GET /api/albums/:personSlug
+* GET /api/images/:albumSlug
+* GET /api/search?q=
+
+### Admin:
+
+* POST /api/admin/person
+* PUT /api/admin/person/:id
+* POST /api/admin/album
+* POST /api/admin/images
+
+Use JSON responses only.
+
+---
+
+# 5. PUBLIC WEBSITE (UI REQUIREMENTS)
+
+## Global UI
+
+* Dark mode default
+* Centered layout
+* Smooth transitions
+* Skeleton loaders for loading states
+* Responsive (mobile-first)
+
+---
+
+## Home Page
+
+* Top sticky search bar
+* Grid of persons
+* Each card:
+
+  * Profile image
+  * Name
+  * Small bio preview
+* Hover effect (scale + shadow)
+
+---
+
+## Person Page
+
+* Large header:
+
+  * Profile image (circle)
+  * Name (bold)
+  * Bio (short)
+* Tabs:
+
+  * Albums
+* Albums displayed as cards
+
+---
+
+## Album Page
+
+* Masonry grid (Pinterest style)
+* Lazy loading images
+* Click image → fullscreen viewer
+
+---
+
+## Image Viewer
+
+* Fullscreen modal
+* Dark background
+* Swipe (mobile)
+* Arrow navigation (desktop)
+* Close button top-right
+
+---
+
+# 6. ADMIN PORTAL (SEPARATE APP)
+
+## Features:
+
+### Dashboard
+
+* List of persons
+* Add new person button
+
+---
+
+### Create/Edit Person
+
+* Name
+* Bio
+* Profile image (upload to Cloudinary)
+
+---
+
+### Album Management
+
+* Create album under person
+* List albums
+
+---
+
+### Image Upload
+
+* Upload multiple images to Cloudinary
+* Assign to album
+* Show preview before upload
+
+---
+
+# 7. CLOUDINARY INTEGRATION
+
+* Upload images from admin panel
+* Store returned URLs in database
+* Generate thumbnails using Cloudinary transformations
+
+---
+
+# 8. SEARCH
+
+* Implement live search (debounced)
+* Search by person name
+* Show instant results dropdown
+
+---
+
+# 9. PERFORMANCE
+
+* Lazy load images
+* Use optimized thumbnails
+* Cache API responses where possible
+
+---
+
+# 10. FOLDER STRUCTURE
+
+Create clean structure:
+
+/public-site
+/admin-portal
+/backend-workers
+
+---
+
+# 11. OUTPUT REQUIREMENTS
+
+Generate:
+
+1. Full frontend code (public site)
+2. Full admin portal code
+3. Cloudflare Worker API code
+4. D1 schema setup
+5. Cloudinary integration
+6. Environment variables setup
+7. Deployment instructions for Cloudflare Pages + Workers
+
+---
+
+# 12. IMPORTANT RULES
+
+* Keep UI minimal but premium
+* Avoid unnecessary libraries
+* Write clean, readable code
+* Use reusable components
+* No authentication complexity
+* No chat feature
+
+---
+
+# 13. BONUS (if possible)
+
+* Add smooth animations (Framer Motion optional)
+* Add skeleton loaders
+* Add infinite scroll for images
+
+---
+
+Now generate the full project step-by-step with proper separation of frontend, admin, and backend.
