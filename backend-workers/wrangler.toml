@@ -1,0 +1,21 @@
+name = "album-api"
+main = "src/index.ts"
+compatibility_date = "2024-11-01"
+compatibility_flags = ["nodejs_compat"]
+
+# Run "wrangler d1 create album-db" once, then paste the printed
+# database_id below. Schema lives in ./schema.sql — apply with:
+#   wrangler d1 execute album-db --remote --file=./schema.sql
+[[d1_databases]]
+binding = "DB"
+database_name = "album-db"
+database_id = "REPLACE_WITH_D1_DATABASE_ID"
+
+# Set with:
+#   wrangler secret put ADMIN_PASSWORD
+# (the same value the admin portal user types into the login screen)
+# vars below are non-secret defaults — override per environment as needed.
+[vars]
+# CORS — set to your deployed public + admin origins, comma separated.
+# Use "*" only for local development.
+ALLOWED_ORIGINS = "*"

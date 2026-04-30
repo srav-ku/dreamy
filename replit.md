@@ -1,27 +1,52 @@
-# Workspace
+# Album
 
-## Overview
+A photo album platform: persons → albums → images, with a public browsing site
+and a separate admin portal. Built per the user's spec exactly as requested.
 
-pnpm workspace monorepo using TypeScript. Each package manages its own dependencies.
+## Architecture
+
+- **Backend** (`backend-workers/`): Cloudflare Workers + Hono + D1 (SQLite).
+  Stores image **URLs only** — uploads go directly from the admin portal to
+  Cloudinary. Not runnable inside Replit; deployed via `wrangler`.
+  See `backend-workers/README.md` and `backend-workers/API_CONTRACT.md`.
+- **Public site** (`artifacts/public-site/`): React + Vite, served at `/`.
+  Browses persons, their albums, and images.
+- **Admin portal** (`artifacts/admin-portal/`): React + Vite, served at `/admin/`.
+  Token-gated CRUD for persons / albums / images, plus direct Cloudinary upload.
+- **Pre-existing scaffolding** (`artifacts/api-server`, `lib/api-spec`, `lib/db`,
+  `lib/api-client-react`, `artifacts/mockup-sandbox`): leftover from the
+  monorepo template, not used by Album. Safe to ignore or remove later.
+
+## Required env vars / secrets
+
+Frontends (already configured in this Repl):
+- `VITE_API_BASE_URL` — base URL of the deployed Worker (no trailing slash).
+- `VITE_CLOUDINARY_CLOUD_NAME`
+- `VITE_CLOUDINARY_UPLOAD_PRESET` — must be an **unsigned** preset.
+
+Worker (set with `wrangler secret put` after deploy):
+- `ADMIN_PASSWORD` — the password the admin types in to log in. Doubles as the
+  bearer token returned to the admin portal.
+- `ALLOWED_ORIGINS` (in `wrangler.toml` `[vars]`): comma-separated list of the
+  deployed public + admin origins, or `*` for local dev.
 
 ## Stack
 
-- **Monorepo tool**: pnpm workspaces
-- **Node.js version**: 24
-- **Package manager**: pnpm
-- **TypeScript version**: 5.9
-- **API framework**: Express 5
-- **Database**: PostgreSQL + Drizzle ORM
-- **Validation**: Zod (`zod/v4`), `drizzle-zod`
-- **API codegen**: Orval (from OpenAPI spec)
-- **Build**: esbuild (CJS bundle)
+- Workers runtime: Hono 4
+- D1 (SQLite) — schema in `backend-workers/schema.sql`
+- React 18 + Vite, Wouter, TanStack Query, Tailwind, framer-motion, sonner
+- Cloudinary (unsigned uploads from the browser)
 
-## Key Commands
+## Deploying the backend
 
-- `pnpm run typecheck` — full typecheck across all packages
-- `pnpm run build` — typecheck + build all packages
-- `pnpm --filter @workspace/api-spec run codegen` — regenerate API hooks and Zod schemas from OpenAPI spec
-- `pnpm --filter @workspace/db run push` — push DB schema changes (dev only)
-- `pnpm --filter @workspace/api-server run dev` — run API server locally
-
-See the `pnpm-workspace` skill for workspace structure, TypeScript setup, and package details.
+See `backend-workers/README.md` for full steps. Short version:
+```
+cd backend-workers
+npx wrangler login
+npx wrangler d1 create album-db        # paste database_id into wrangler.toml
+npm run db:apply:remote                # apply schema.sql
+npx wrangler secret put ADMIN_PASSWORD
+npm run deploy
+```
+Then set `VITE_API_BASE_URL` in this Repl to the printed Worker URL and restart
+both frontend workflows.
