@@ -2,7 +2,29 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
-const BASE_URL = import.meta.env.VITE_API_BASE_URL || "";
+const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").trim();
+
+function resolveBaseUrl() {
+  if (!rawBaseUrl) return "";
+
+  // Prevent production deployments from accidentally calling local dev backends.
+  if (typeof window !== "undefined") {
+    const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
+    const pointsToLocalBackend = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawBaseUrl);
+
+    if (!isLocalHost && pointsToLocalBackend) {
+      console.warn(
+        `Ignoring VITE_API_BASE_URL=${rawBaseUrl} on host ${window.location.hostname}. ` +
+          "Set VITE_API_BASE_URL to your deployed Cloudflare Worker URL and redeploy.",
+      );
+      return "";
+    }
+  }
+
+  return rawBaseUrl.replace(/\/$/, "");
+}
+
+const BASE_URL = resolveBaseUrl();
 
 // Types
 export type Person = {
@@ -54,10 +76,23 @@ async function apiFetch<T>(endpoint: string, options: RequestInit = {}): Promise
     headers["Authorization"] = `Bearer ${token}`;
   }
 
-  const response = await fetch(`${BASE_URL}${endpoint}`, {
-    ...options,
-    headers,
-  });
+  let response: Response;
+
+  try {
+    response = await fetch(`${BASE_URL}${endpoint}`, {
+      ...options,
+      headers,
+    });
+  } catch (error) {
+    const hint =
+      BASE_URL
+        ? `Network request failed for ${BASE_URL}${endpoint}.`
+        : "Network request failed for relative API path.";
+
+    throw new Error(
+      `${hint} Check VITE_API_BASE_URL. In Cloudflare Pages, set it to your deployed Worker URL and redeploy.`,
+    );
+  }
 
   if (response.status === 401 && token) {
     localStorage.removeItem("admin_token");
