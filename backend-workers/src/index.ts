@@ -1,15 +1,25 @@
 import { Hono, type Context } from "hono";
 import { cors } from "hono/cors";
+import { jwtVerify, createRemoteJWKSet } from "jose";
 
 type Bindings = {
   DB: D1Database;
-  ADMIN_PASSWORD: string;
   ALLOWED_ORIGINS: string;
+  FIREBASE_PROJECT_ID: string;
+  ALLOWED_ADMIN_EMAILS: string;
 };
 
 type Variables = {};
 
-const app = new Hono<{ Bindings: Bindings; Variables: Variables }>();
+type Env = {
+  Bindings: Bindings;
+  Variables: Variables;
+};
+
+const app = new Hono<Env>();
+
+const FIREBASE_JWKS_URL = "https://www.googleapis.com/robot/v1/metadata/jwk/securetoken@system.gserviceaccount.com";
+const JWKS = createRemoteJWKSet(new URL(FIREBASE_JWKS_URL));
 
 app.use("*", async (c, next) => {
   const allowed = (c.env.ALLOWED_ORIGINS || "*").split(",").map((s) => s.trim());
@@ -25,9 +35,9 @@ app.use("*", async (c, next) => {
   })(c, next);
 });
 
-const json = (c: Context, body: unknown, status = 200) =>
+const json = (c: Context<Env>, body: unknown, status = 200) =>
   c.json(body as Record<string, unknown>, status as 200);
-const err = (c: Context, message: string, status = 400) =>
+const err = (c: Context<Env>, message: string, status = 400) =>
   json(c, { error: message }, status);
 
 const slugify = (input: string) =>
@@ -64,12 +74,45 @@ async function uniqueSlug(
   }
 }
 
-async function requireAdmin(c: Context<{ Bindings: Bindings }>): Promise<true | Response> {
+async function verifyFirebaseToken(c: Context<Env>, token: string) {
+  const projectId = c.env.FIREBASE_PROJECT_ID;
+  const allowedEmails = (c.env.ALLOWED_ADMIN_EMAILS || "").split(",").map(e => e.trim().toLowerCase());
+
+  if (!projectId) {
+    console.error("FIREBASE_PROJECT_ID not set");
+    return null;
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS, {
+      issuer: `https://securetoken.google.com/${projectId}`,
+      audience: projectId,
+    });
+
+    const email = (payload.email as string || "").toLowerCase();
+    if (!email || !allowedEmails.includes(email)) {
+      console.warn(`Unauthorized email attempt: ${email}`);
+      return null;
+    }
+
+    return payload;
+  } catch (err) {
+    console.error("JWT verification failed:", err);
+    return null;
+  }
+}
+
+async function requireAdmin(c: Context<Env>): Promise<true | Response> {
   const header = c.req.header("Authorization") ?? "";
   const token = header.startsWith("Bearer ") ? header.slice(7) : "";
-  if (!c.env.ADMIN_PASSWORD || token !== c.env.ADMIN_PASSWORD) {
+  
+  if (!token) return err(c, "Unauthorized", 401);
+
+  const payload = await verifyFirebaseToken(c, token);
+  if (!payload) {
     return err(c, "Unauthorized", 401);
   }
+
   return true;
 }
 
@@ -157,45 +200,62 @@ app.get("/api/images/:albumSlug", async (c) => {
 });
 
 app.get("/api/search", async (c) => {
-  const q = (c.req.query("q") ?? "").trim().toLowerCase();
-  if (!q) return json(c, []);
-  const { results } = await c.env.DB.prepare(
-    `SELECT id, name, slug, profile_image, bio, created_at, updated_at
-       FROM persons
-      WHERE LOWER(name) LIKE ?
-      ORDER BY name ASC
-      LIMIT 50`,
-  )
-    .bind(`${q}%`)
-    .all();
-  return json(c, results ?? []);
-});
+  const q = (c.req.query("q") ?? "").trim();
+  if (!q) return json(c, { persons: [], albums: [] });
+  
+  const likeQ = `%${q}%`;
+  
+  const [persons, albums] = await Promise.all([
+    c.env.DB.prepare(
+      `SELECT id, name, slug, profile_image, bio, created_at, updated_at
+         FROM persons
+        WHERE name LIKE ? OR bio LIKE ?
+        ORDER BY name ASC
+        LIMIT 20`
+    ).bind(likeQ, likeQ).all(),
+    c.env.DB.prepare(
+      `SELECT a.id, a.name, a.slug, p.slug as person_slug, p.name as person_name
+         FROM albums a
+         JOIN persons p ON a.person_id = p.id
+        WHERE a.name LIKE ?
+        ORDER BY a.name ASC
+        LIMIT 20`
+    ).bind(likeQ).all()
+  ]);
 
-// ---------- Admin: login ----------
-app.post("/api/admin/login", async (c) => {
-  const body = await c.req.json().catch(() => null);
-  const password =
-    body && typeof body.password === "string" ? body.password : "";
-  if (!c.env.ADMIN_PASSWORD || password !== c.env.ADMIN_PASSWORD) {
-    return err(c, "Invalid password", 401);
-  }
-  return json(c, { token: c.env.ADMIN_PASSWORD });
+  return json(c, { 
+    persons: persons.results ?? [], 
+    albums: albums.results ?? [] 
+  });
 });
 
 // ---------- Admin: persons ----------
+app.get("/api/admin/person/:id", async (c) => {
+  const ok = await requireAdmin(c);
+  if (ok !== true) return ok;
+  const id = Number(c.req.param("id"));
+  const row = await c.env.DB.prepare(
+    `SELECT id, name, slug, profile_image, bio, created_at, updated_at
+       FROM persons WHERE id = ?`,
+  )
+    .bind(id)
+    .first();
+  if (!row) return err(c, "Not found", 404);
+  const albums = await loadPersonAlbums(c.env.DB, id);
+  return json(c, { ...row, albums });
+});
+
 app.post("/api/admin/person", async (c) => {
   const ok = await requireAdmin(c);
   if (ok !== true) return ok;
   const body = await c.req.json().catch(() => null);
-  const name =
-    body && typeof body.name === "string" ? body.name.trim() : "";
-  if (!name) return err(c, "name is required");
-  const bio =
-    body && typeof body.bio === "string" ? body.bio : null;
-  const profile_image =
-    body && typeof body.profile_image === "string"
-      ? body.profile_image
-      : null;
+  if (!body || !body.name || typeof body.name !== "string" || !body.name.trim()) {
+    return err(c, "name is required");
+  }
+  const name = body.name.trim();
+  const bio = typeof body.bio === "string" ? body.bio : null;
+  const profile_image = typeof body.profile_image === "string" ? body.profile_image : null;
+  
   const slug = await uniqueSlug(c.env.DB, "persons", slugify(name));
   const res = await c.env.DB.prepare(
     `INSERT INTO persons (name, slug, profile_image, bio)
@@ -266,7 +326,43 @@ app.put("/api/admin/person/:id", async (c) => {
   return json(c, row);
 });
 
+app.delete("/api/admin/person/:id", async (c) => {
+  const ok = await requireAdmin(c);
+  if (ok !== true) return ok;
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return err(c, "invalid id");
+
+  // D1 supports foreign key cascades if defined, but let's be explicit if needed.
+  // The schema has REFERENCES ... ON DELETE CASCADE, so simple delete should work.
+  await c.env.DB.prepare("DELETE FROM persons WHERE id = ?").bind(id).run();
+  return json(c, { success: true });
+});
+
 // ---------- Admin: albums ----------
+app.get("/api/admin/album/:id", async (c) => {
+  const ok = await requireAdmin(c);
+  if (ok !== true) return ok;
+  const id = Number(c.req.param("id"));
+  const row = await c.env.DB.prepare(
+    `SELECT a.id, a.person_id, a.name, a.slug, p.slug as person_slug
+       FROM albums a
+       JOIN persons p ON a.person_id = p.id
+      WHERE a.id = ?`,
+  )
+    .bind(id)
+    .first();
+  if (!row) return err(c, "Not found", 404);
+  return json(c, row);
+});
+
+app.get("/api/admin/person/:id/albums", async (c) => {
+  const ok = await requireAdmin(c);
+  if (ok !== true) return ok;
+  const id = Number(c.req.param("id"));
+  const albums = await loadPersonAlbums(c.env.DB, id);
+  return json(c, albums);
+});
+
 app.post("/api/admin/album", async (c) => {
   const ok = await requireAdmin(c);
   if (ok !== true) return ok;
@@ -304,7 +400,41 @@ app.post("/api/admin/album", async (c) => {
   return json(c, row, 201);
 });
 
-// ---------- Admin: images (batch insert) ----------
+app.put("/api/admin/album/:id", async (c) => {
+  const ok = await requireAdmin(c);
+  if (ok !== true) return ok;
+  const id = Number(c.req.param("id"));
+  const body = await c.req.json().catch(() => null);
+  const name = body && typeof body.name === "string" ? body.name.trim() : "";
+  if (!Number.isFinite(id) || !name) {
+    return err(c, "id and name are required");
+  }
+
+  const existing = await c.env.DB.prepare("SELECT id, person_id, name FROM albums WHERE id = ?")
+    .bind(id)
+    .first<{ id: number; person_id: number; name: string }>();
+  if (!existing) return err(c, "Not found", 404);
+
+  let slug = await uniqueSlug(c.env.DB, "albums", slugify(name), { person_id: existing.person_id });
+  
+  await c.env.DB.prepare("UPDATE albums SET name = ?, slug = ? WHERE id = ?")
+    .bind(name, slug, id)
+    .run();
+
+  return json(c, { id, name, slug });
+});
+
+app.delete("/api/admin/album/:id", async (c) => {
+  const ok = await requireAdmin(c);
+  if (ok !== true) return ok;
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return err(c, "invalid id");
+
+  await c.env.DB.prepare("DELETE FROM albums WHERE id = ?").bind(id).run();
+  return json(c, { success: true });
+});
+
+// ---------- Admin: images (batch insert / reorder / delete) ----------
 app.post("/api/admin/images", async (c) => {
   const ok = await requireAdmin(c);
   if (ok !== true) return ok;
@@ -360,6 +490,33 @@ app.post("/api/admin/images", async (c) => {
     .all();
   // restore ascending order for the response
   return json(c, (results ?? []).slice().reverse(), 201);
+});
+
+app.put("/api/admin/images/reorder", async (c) => {
+  const ok = await requireAdmin(c);
+  if (ok !== true) return ok;
+  const body = await c.req.json().catch(() => null);
+  if (!Array.isArray(body)) return err(c, "array of {id, order_index} required");
+
+  const stmt = c.env.DB.prepare("UPDATE images SET order_index = ? WHERE id = ?");
+  const batch = body
+    .filter(item => typeof item.id === "number" && typeof item.order_index === "number")
+    .map(item => stmt.bind(item.order_index, item.id));
+  
+  if (batch.length > 0) {
+    await c.env.DB.batch(batch);
+  }
+  return json(c, { success: true });
+});
+
+app.delete("/api/admin/image/:id", async (c) => {
+  const ok = await requireAdmin(c);
+  if (ok !== true) return ok;
+  const id = Number(c.req.param("id"));
+  if (!Number.isFinite(id)) return err(c, "invalid id");
+
+  await c.env.DB.prepare("DELETE FROM images WHERE id = ?").bind(id).run();
+  return json(c, { success: true });
 });
 
 // ---------- Fallback ----------

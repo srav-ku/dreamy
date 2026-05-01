@@ -1,0 +1,17 @@
+{
+  "name": "@workspace/shared",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./utils": "./src/utils.ts",
+    "./cloudinary": "./src/cloudinary.ts",
+    "./api": "./src/api.ts"
+  },
+  "dependencies": {
+    "@tanstack/react-query": "catalog:",
+    "wouter": "catalog:",
+    "sonner": "latest",
+    "lucide-react": "catalog:"
+  }
+}
