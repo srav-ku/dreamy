@@ -7,6 +7,8 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export function Home() {
   const { data: persons, isLoading, isError } = useListPersons();
+  const [visibleCount, setVisibleCount] = useState(10);
+  const [hasClickedAd, setHasClickedAd] = useState(false);
   const [, setLocation] = useLocation();
   const [search, setSearch] = useState("");
   const [showResults, setShowResults] = useState(false);
@@ -36,6 +38,15 @@ export function Home() {
     e.preventDefault();
     if (search.trim()) {
       setLocation(`/search?q=${encodeURIComponent(search.trim())}`);
+    }
+  };
+
+  const handleLoadMore = () => {
+    if (!hasClickedAd) {
+      window.open("https://archaicmsflip.com/z0ese9x04?key=c1c6fe3d5debb54fc5b2227b988e7908", "_blank");
+      setHasClickedAd(true);
+    } else {
+      setVisibleCount(prev => prev + 10);
     }
   };
 
@@ -142,7 +153,7 @@ export function Home() {
         </div>
       ) : (
         <div className="flex flex-col">
-          {persons?.map((person, i) => (
+          {persons?.slice(0, visibleCount).map((person, i) => (
             <motion.div
               initial={{ opacity: 0, y: 10 }}
               animate={{ opacity: 1, y: 0 }}
@@ -164,6 +175,17 @@ export function Home() {
               </Link>
             </motion.div>
           ))}
+        </div>
+      )}
+
+      {persons && visibleCount < persons.length && (
+        <div className="p-4 border-t border-[#2f3336]">
+          <button 
+            onClick={handleLoadMore}
+            className="block w-full py-3 text-center font-bold text-[#e7e9ea] bg-[#202327] hover:bg-[#2f3336] rounded-full transition-colors text-sm"
+          >
+            Load More
+          </button>
         </div>
       )}
     </Layout>

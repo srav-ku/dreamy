@@ -102,9 +102,10 @@ export default function PersonAlbums() {
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="font-bold group-hover:underline decoration-[#71767B] underline-offset-4">{album.name}</div>
-                  <div className="text-[#71767B] text-sm">{album.image_count} photos</div>
-                </div>
-              </Link>
+                  <div className="text-[#71767B] text-sm">
+                    {album.image_count} photos • {((album.image_count * 2.5) / 1024).toFixed(2)} GB
+                  </div>
+                </div>              </Link>
               <div className="flex items-center gap-2 opacity-0 group-hover:opacity-100 transition-opacity">
                 <Link href={`/albums/${album.id}/edit`}>
                   <Button variant="outline" size="sm" className="rounded-full border-[#2F3336] text-white hover:bg-white/10 bg-transparent">

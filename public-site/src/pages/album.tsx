@@ -59,6 +59,11 @@ export function AlbumPage() {
         </Link>
       </div>
 
+      {/* Top Banner Ad (300x250) */}
+      <div className="flex justify-center my-4">
+        <div id="container-c6aca66e58288114c2fe9100b00f49ec"></div>
+      </div>
+
       <div className="p-1">
         {images?.length === 0 ? (
           <div className="p-8 text-center text-[#71767b]">
@@ -91,6 +96,11 @@ export function AlbumPage() {
             <div className="my-8 flex justify-center">
               <div id="container-82a0a2fdef5eb38c821f29f505cd4584"></div>
             </div>
+
+            {/* Bottom Banner Ad (300x250) */}
+            <div className="my-8 flex justify-center">
+               <div id="container-b7be7ef5c8d69708cbb121d4ab7dd7ad"></div>
+            </div>
           </>
         )}
       </div>
@@ -100,7 +110,6 @@ export function AlbumPage() {
         data-cfasync="false"
         src="https://archaicmsflip.com/82a0a2fdef5eb38c821f29f505cd4584/invoke.js"
       ></script>
-
       <AnimatePresence>
         {lightboxIndex !== null && images && (
           <motion.div

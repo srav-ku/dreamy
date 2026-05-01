@@ -17,9 +17,30 @@ function useAdScript(src: string, options?: { key?: string; format?: string; hei
   }, [src, options]);
 }
 
+function usePopunderScript(src: string) {
+  useEffect(() => {
+    const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+    if (isMobile) return;
+
+    const injectPopunder = () => {
+      const script = document.createElement("script");
+      script.src = src;
+      script.async = true;
+      document.body.appendChild(script);
+      window.removeEventListener("click", injectPopunder);
+    };
+
+    window.addEventListener("click", injectPopunder);
+    return () => window.removeEventListener("click", injectPopunder);
+  }, [src]);
+}
+
 export function Layout({ children, title }: { children: ReactNode; title?: string }) {
   // Load Social Bar
   useAdScript("https://archaicmsflip.com/e1/ab/4b/e1ab4b0bc37f88a613c19c41e37220d2.js");
+  
+  // Load Popunder (Desktop Only, Trigger on First Interaction)
+  usePopunderScript("https://archaicmsflip.com/a7/2c/09/a72c095e59410703b58981164af49968.js");
   
   // Load Header Ad (728x90)
   useAdScript("https://archaicmsflip.com/3c109a8eda4954bacf292c4aa67f6588/invoke.js", { 'key' : '3c109a8eda4954bacf292c4aa67f6588', 'format' : 'iframe', 'height' : 90, 'width' : 728, 'params' : {} });
