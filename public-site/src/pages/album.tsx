@@ -115,12 +115,24 @@ export function AlbumPage() {
             >
               <motion.img
                 key={lightboxIndex}
-                initial={{ scale: 0.95, opacity: 0 }}
-                animate={{ scale: 1, opacity: 1 }}
+                initial={{ opacity: 0, x: 100 }}
+                animate={{ opacity: 1, x: 0 }}
+                exit={{ opacity: 0, x: -100 }}
+                drag="x"
+                dragConstraints={{ left: 0, right: 0 }}
+                dragElastic={0.2}
+                onDragEnd={(_, info) => {
+                  const swipe = info.offset.x;
+                  if (swipe < -50 && lightboxIndex < images.length - 1) {
+                    setLightboxIndex(lightboxIndex + 1);
+                  } else if (swipe > 50 && lightboxIndex > 0) {
+                    setLightboxIndex(lightboxIndex - 1);
+                  }
+                }}
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 src={images[lightboxIndex].image_url}
                 alt=""
-                className="max-w-[90vw] max-h-[85vh] object-contain shadow-2xl"
+                className="max-w-[90vw] max-h-[85vh] object-contain shadow-2xl cursor-grab active:cursor-grabbing touch-none"
                 onClick={(e) => e.stopPropagation()}
               />
 
