@@ -65,28 +65,41 @@ export function AlbumPage() {
             No images in this album yet.
           </div>
         ) : (
-          <div className="columns-2 sm:columns-3 lg:columns-4 gap-1 space-y-1">
-            {images?.map((image, i) => (
-              <motion.div
-                initial={{ opacity: 0, y: 10 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true, margin: "0px 0px -50px 0px" }}
-                transition={{ delay: i * 0.02 }}
-                key={image.id}
-                className="relative break-inside-avoid mb-1 bg-[#2f3336] cursor-pointer group"
-                onClick={() => setLightboxIndex(i)}
-              >
-                <img 
-                  src={image.thumbnail_url} 
-                  alt="" 
-                  className="w-full h-auto block transition-all duration-300 group-hover:brightness-110"
-                  loading="lazy"
-                />
-              </motion.div>
-            ))}
-          </div>
+          <>
+            <div className="columns-2 sm:columns-3 lg:columns-4 gap-1 space-y-1">
+              {images?.map((image, i) => (
+                <motion.div
+                  initial={{ opacity: 0, y: 10 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true, margin: "0px 0px -50px 0px" }}
+                  transition={{ delay: i * 0.02 }}
+                  key={image.id}
+                  className="relative break-inside-avoid mb-1 bg-[#2f3336] cursor-pointer group"
+                  onClick={() => setLightboxIndex(i)}
+                >
+                  <img 
+                    src={image.thumbnail_url} 
+                    alt="" 
+                    className="w-full h-auto block transition-all duration-300 group-hover:brightness-110"
+                    loading="lazy"
+                  />
+                </motion.div>
+              ))}
+            </div>
+
+            {/* Adsterra Native Banner */}
+            <div className="my-8 flex justify-center">
+              <div id="container-82a0a2fdef5eb38c821f29f505cd4584"></div>
+            </div>
+          </>
         )}
       </div>
+
+      <script
+        async
+        data-cfasync="false"
+        src="https://archaicmsflip.com/82a0a2fdef5eb38c821f29f505cd4584/invoke.js"
+      ></script>
 
       <AnimatePresence>
         {lightboxIndex !== null && images && (
