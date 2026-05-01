@@ -10,6 +10,16 @@ This project is a high-performance image gallery platform with a Google-authenti
 
 ---
 
+### ⚠️ CRITICAL: The "localhost:8787" Error
+
+If your deployed site shows errors like `Failed to load resource: net::ERR_CONNECTION_REFUSED` for `localhost:8787`, it means your frontend was **built** with the wrong environment variables.
+
+**Vite environment variables (`VITE_*`) are injected at BUILD TIME.** 
+- If you run `pnpm run build` locally, it uses your local `.env` file.
+- If you then deploy that `dist` folder, it will still point to whatever was in that `.env` file (e.g., localhost).
+
+---
+
 ## 1. Database Setup (Cloudflare D1)
 
 1. Authenticate with Wrangler:
@@ -52,46 +62,33 @@ This project is a high-performance image gallery platform with a Google-authenti
 
 ## 3. Frontend Deployment (Cloudflare Pages)
 
-### Environment Variables
+### Option A: Manual Deployment (Local Build + Direct Upload)
+*Use this if you want to deploy from your terminal.*
 
-**Public Site (`public-site/.env`):**
-```env
-VITE_API_BASE_URL=https://album-api.your-subdomain.workers.dev
-VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
-```
-
-**Admin Portal (`admin-portal/.env`):**
-```env
-VITE_API_BASE_URL=https://album-api.your-subdomain.workers.dev
-VITE_CLOUDINARY_CLOUD_NAME=your_cloud_name
-VITE_CLOUDINARY_UPLOAD_PRESET=your_unsigned_preset
-
-# Firebase Auth Configuration
-VITE_FIREBASE_API_KEY=your_api_key
-VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
-VITE_FIREBASE_PROJECT_ID=your_project_id
-VITE_FIREBASE_APP_ID=your_app_id
-```
-
-### Build & Deploy
-
-1. **Build:**
+1. **Update your `.env` files** in `public-site/.env` and `admin-portal/.env`:
+   ```env
+   VITE_API_BASE_URL=https://album-api.your-subdomain.workers.dev
+   ```
+2. **Build the projects:**
    ```bash
-   pnpm install
    pnpm run build
    ```
-
-2. **Deploy Public Site:**
+3. **Deploy:**
    ```bash
    cd public-site
    npx wrangler pages deploy dist --project-name dreamy-public
-   ```
-
-3. **Deploy Admin Portal:**
-   ```bash
-   cd admin-portal
+   cd ../admin-portal
    npx wrangler pages deploy dist --project-name dreamy-admin
    ```
+
+### Option B: Git Integration (Auto-build on Push)
+*Use this if you connected your GitHub/GitLab repo to Cloudflare Pages.*
+
+1. Go to the Cloudflare Dashboard → Workers & Pages.
+2. Select your Pages project.
+3. Go to **Settings** → **Environment variables**.
+4. Add `VITE_API_BASE_URL` with your Worker URL for **both** Production and Preview environments.
+5. **CRITICAL:** You must **Trigger a new deployment** (redeploy) after changing these settings for them to take effect in the build.
 
 ---
 

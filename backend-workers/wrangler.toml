@@ -6,9 +6,9 @@ compatibility_flags = ["nodejs_compat"]
 [[d1_databases]]
 binding = "DB"
 database_name = "album-db"
-database_id = "a901e4bc-ea2d-4e45-b25e-e161b93e30d1"
+database_id = "875a2364-e21a-4425-853d-fbed69fdc34d"
 
 [vars]
 ALLOWED_ORIGINS = "*"
 FIREBASE_PROJECT_ID = "myott-a40db"
-ALLOWED_ADMIN_EMAILS = "usestoreme@gmail.com"
+ALLOWED_ADMIN_EMAILS = "usestoreme@gmail.com"   

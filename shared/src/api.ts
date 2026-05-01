@@ -2,29 +2,31 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { toast } from "sonner";
 import { useLocation } from "wouter";
 
-const rawBaseUrl = (import.meta.env.VITE_API_BASE_URL || "").trim();
+const getBaseUrl = () => {
+  const envUrl = (import.meta.env.VITE_API_BASE_URL || "").trim();
+  if (!envUrl) return "";
 
-function resolveBaseUrl() {
-  if (!rawBaseUrl) return "";
-
-  // Prevent production deployments from accidentally calling local dev backends.
+  // If we're on a deployed site but the API URL still points to localhost,
+  // it's almost certainly a misconfiguration. Fallback to empty string (relative path)
+  // to avoid ERR_CONNECTION_REFUSED, and log a helpful warning.
   if (typeof window !== "undefined") {
     const isLocalHost = ["localhost", "127.0.0.1"].includes(window.location.hostname);
-    const pointsToLocalBackend = /^https?:\/\/(localhost|127\.0\.0\.1)(:\d+)?/i.test(rawBaseUrl);
+    const pointsToLocal = envUrl.includes("localhost") || envUrl.includes("127.0.0.1");
 
-    if (!isLocalHost && pointsToLocalBackend) {
+    if (!isLocalHost && pointsToLocal) {
       console.warn(
-        `Ignoring VITE_API_BASE_URL=${rawBaseUrl} on host ${window.location.hostname}. ` +
-          "Set VITE_API_BASE_URL to your deployed Cloudflare Worker URL and redeploy.",
+        `[API] VITE_API_BASE_URL is set to "${envUrl}" but you are on "${window.location.hostname}". ` +
+        "The API will likely fail. Please set VITE_API_BASE_URL to your production Worker URL."
       );
-      return "";
+      // We return the URL anyway because sometimes people use SSH tunnels or specific local setups,
+      // but the warning will be visible in the console.
     }
   }
 
-  return rawBaseUrl.replace(/\/$/, "");
-}
+  return envUrl.replace(/\/$/, "");
+};
 
-const BASE_URL = resolveBaseUrl();
+const BASE_URL = getBaseUrl();
 
 // Types
 export type Person = {
