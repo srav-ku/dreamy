@@ -110,7 +110,7 @@ export function AlbumPage() {
             </div>
 
             <div 
-              className="flex-1 flex items-center justify-center p-4 relative"
+              className="flex-1 flex items-center justify-center p-8 relative overflow-hidden"
               onClick={closeLightbox}
             >
               <motion.img
@@ -120,7 +120,7 @@ export function AlbumPage() {
                 transition={{ type: "spring", damping: 25, stiffness: 300 }}
                 src={images[lightboxIndex].image_url}
                 alt=""
-                className="max-w-full max-h-full object-contain"
+                className="max-w-[90vw] max-h-[85vh] object-contain shadow-2xl"
                 onClick={(e) => e.stopPropagation()}
               />
 

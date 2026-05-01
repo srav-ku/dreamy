@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Link, useParams } from "wouter";
 import { useAdminPerson, useDeleteAlbum } from "@/lib/api";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { ArrowLeft, ImageIcon, Trash2 } from "lucide-react";
+import { ArrowLeft, ImageIcon, Trash2, Search } from "lucide-react";
 import { Skeleton } from "@/components/ui/skeleton";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -23,6 +25,11 @@ export default function PersonAlbums() {
   
   const { data: person, isLoading } = useAdminPerson(id);
   const deleteAlbum = useDeleteAlbum();
+  const [search, setSearch] = useState("");
+
+  const filteredAlbums = person?.albums?.filter(a => 
+    a.name.toLowerCase().includes(search.toLowerCase())
+  );
 
   if (isLoading) {
     return (
@@ -67,13 +74,23 @@ export default function PersonAlbums() {
         </Link>
       </div>
 
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71767B]" />
+        <Input 
+          placeholder="Search albums..." 
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10 bg-[#16181C] border-[#2F3336] focus:border-[#1d9bf0] transition-colors rounded-xl text-white h-11"
+        />
+      </div>
+
       <div className="space-y-0">
-        {person.albums?.length === 0 ? (
+        {filteredAlbums?.length === 0 ? (
           <div className="text-center py-12 text-[#71767B]">
-            <p>No albums yet.</p>
+            <p>{search ? `No albums matching "${search}"` : "No albums yet."}</p>
           </div>
         ) : (
-          person.albums?.map((album) => (
+          filteredAlbums?.map((album) => (
             <div key={album.id} className="flex items-center gap-4 py-4 border-b border-[#2F3336] hover:bg-white/[0.03] transition-colors -mx-4 px-4 cursor-pointer group">
               <Link href={`/albums/${album.id}/upload?slug=${album.slug}`} className="flex-1 flex items-center gap-4 min-w-0">
                 <div className="w-16 h-16 rounded bg-[#16181C] flex items-center justify-center overflow-hidden border border-[#2F3336]">

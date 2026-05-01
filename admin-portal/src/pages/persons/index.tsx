@@ -1,10 +1,12 @@
+import { useState } from "react";
 import { Link } from "wouter";
 import { useListPersons, useDeletePerson } from "@/lib/api";
 import { Layout } from "@/components/layout";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar";
-import { Trash2 } from "lucide-react";
+import { Trash2, Search } from "lucide-react";
+import { Input } from "@/components/ui/input";
 import {
   AlertDialog,
   AlertDialogAction,
@@ -20,6 +22,12 @@ import {
 export default function PersonsList() {
   const { data: persons, isLoading } = useListPersons();
   const deletePerson = useDeletePerson();
+  const [search, setSearch] = useState("");
+
+  const filteredPersons = persons?.filter(p => 
+    p.name.toLowerCase().includes(search.toLowerCase()) || 
+    (p.bio?.toLowerCase().includes(search.toLowerCase()))
+  );
 
   return (
     <Layout>
@@ -30,6 +38,16 @@ export default function PersonsList() {
             + New person
           </Button>
         </Link>
+      </div>
+
+      <div className="relative mb-6">
+        <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-[#71767B]" />
+        <Input 
+          placeholder="Search persons..." 
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          className="pl-10 bg-[#16181C] border-[#2F3336] focus:border-[#1d9bf0] transition-colors rounded-xl text-white h-11"
+        />
       </div>
 
       <div className="space-y-0">
@@ -45,12 +63,12 @@ export default function PersonsList() {
               </div>
             ))}
           </div>
-        ) : persons?.length === 0 ? (
+        ) : filteredPersons?.length === 0 ? (
           <div className="text-center py-12 text-[#71767B]">
-            <p>No persons yet.</p>
+            <p>{search ? `No persons matching "${search}"` : "No persons yet."}</p>
           </div>
         ) : (
-          persons?.map((person) => (
+          filteredPersons?.map((person) => (
             <div key={person.id} className="flex items-center gap-4 py-4 border-b border-[#2F3336] hover:bg-white/[0.03] transition-colors -mx-4 px-4 cursor-pointer group">
               <Link href={`/persons/${person.id}/albums`} className="flex-1 flex items-center gap-4 min-w-0">
                 <Avatar className="h-12 w-12 border border-[#2F3336]">
