@@ -192,7 +192,7 @@ app.get("/api/images/:albumSlug", async (c) => {
   const { results } = await c.env.DB.prepare(
     `SELECT id, album_id, image_url, thumbnail_url, order_index, created_at
        FROM images WHERE album_id = ?
-       ORDER BY order_index ASC, created_at ASC`,
+       ORDER BY order_index DESC, created_at DESC`,
   )
     .bind(album.id)
     .all();
