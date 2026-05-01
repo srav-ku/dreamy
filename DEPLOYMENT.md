@@ -95,6 +95,88 @@ VITE_FIREBASE_APP_ID=your_app_id
 
 ---
 
+## 4. PowerShell Guide — Create a **New** Cloudflare Pages Deployment (Not Redeploy)
+
+Use this when you want a fresh Pages project instead of reusing `dreamy-public` / `dreamy-admin`.
+
+> Run these commands from **Windows PowerShell**.
+
+### 4.1 Login and install deps
+```powershell
+pnpm install
+npx wrangler login
+```
+
+### 4.2 Generate unique project names
+```powershell
+$stamp = Get-Date -Format "yyyyMMdd-HHmm"
+$PublicProject = "dreamy-public-$stamp"
+$AdminProject = "dreamy-admin-$stamp"
+
+Write-Host "Public project: $PublicProject"
+Write-Host "Admin project:  $AdminProject"
+```
+
+### 4.3 Build both frontends
+```powershell
+pnpm run build
+```
+
+### 4.4 Create and deploy a new Public Pages project
+```powershell
+cd public-site
+npx wrangler pages project create $PublicProject --production-branch main
+npx wrangler pages deploy dist --project-name $PublicProject
+cd ..
+```
+
+### 4.5 Set Public project environment variables (Production)
+```powershell
+npx wrangler pages secret put VITE_API_BASE_URL --project-name $PublicProject
+npx wrangler pages secret put VITE_CLOUDINARY_CLOUD_NAME --project-name $PublicProject
+```
+
+After setting secrets, deploy once more so the new build uses them:
+```powershell
+cd public-site
+npx wrangler pages deploy dist --project-name $PublicProject
+cd ..
+```
+
+### 4.6 Create and deploy a new Admin Pages project
+```powershell
+cd admin-portal
+npx wrangler pages project create $AdminProject --production-branch main
+npx wrangler pages deploy dist --project-name $AdminProject
+cd ..
+```
+
+### 4.7 Set Admin project environment variables (Production)
+```powershell
+npx wrangler pages secret put VITE_API_BASE_URL --project-name $AdminProject
+npx wrangler pages secret put VITE_CLOUDINARY_CLOUD_NAME --project-name $AdminProject
+npx wrangler pages secret put VITE_CLOUDINARY_UPLOAD_PRESET --project-name $AdminProject
+npx wrangler pages secret put VITE_FIREBASE_API_KEY --project-name $AdminProject
+npx wrangler pages secret put VITE_FIREBASE_AUTH_DOMAIN --project-name $AdminProject
+npx wrangler pages secret put VITE_FIREBASE_PROJECT_ID --project-name $AdminProject
+npx wrangler pages secret put VITE_FIREBASE_APP_ID --project-name $AdminProject
+```
+
+After setting secrets, deploy once more so the new build uses them:
+```powershell
+cd admin-portal
+npx wrangler pages deploy dist --project-name $AdminProject
+cd ..
+```
+
+### 4.8 Verify URLs and API target
+1. Open both new `*.pages.dev` URLs from the deploy output.
+2. In browser devtools → Network, verify requests go to:
+   `https://album-api.your-subdomain.workers.dev/api/...`
+3. Ensure no request is going to `http://localhost:8787`.
+
+---
+
 ## Cloudinary Setup
 1. Create an account at [Cloudinary](https://cloudinary.com/).
 2. In Settings > Upload, create an **Unsigned** upload preset.
