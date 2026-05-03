@@ -3,7 +3,8 @@ import {
   Dialog, 
   DialogContent, 
   DialogHeader, 
-  DialogTitle 
+  DialogTitle,
+  DialogDescription
 } from "@/components/ui/dialog";
 import { Input } from "@/components/ui/input";
 import { ScrollArea } from "@/components/ui/scroll-area";
@@ -53,21 +54,24 @@ export const ImagePickerModal = ({ isOpen, onClose, onSelect }: ImagePickerModal
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="w-[95vw] sm:max-w-[500px] bg-black border-[#2f3336] p-0 overflow-hidden flex flex-col h-[80vh] sm:h-[600px] shadow-2xl">
+      <DialogContent className="!fixed !inset-0 !translate-x-0 !translate-y-0 sm:!left-[50%] sm:!top-[50%] sm:!-translate-x-1/2 sm:!-translate-y-1/2 w-full max-w-none sm:max-w-[500px] bg-black border-[#2f3336] p-0 overflow-hidden flex flex-col h-dvh sm:h-[600px] shadow-2xl rounded-none sm:rounded-xl border-0 sm:border z-[99999]">
         <DialogHeader className="p-4 border-b border-[#2f3336]">
           <DialogTitle className="text-[#e7e9ea] flex items-center gap-2 pr-6">
             {selectedAlbum ? (
               <button onClick={() => setSelectedAlbum(null)} className="hover:text-[#1d9bf0] flex items-center gap-1 transition-colors text-left">
-                <ChevronRight className="h-4 w-4 rotate-180 flex-shrink-0" /> <span className="truncate">{selectedAlbum.name}</span>
+                <ChevronRight className="h-4 w-4 rotate-180 shrink-0" /> <span className="truncate">{selectedAlbum.name}</span>
               </button>
             ) : selectedPersonSlug ? (
               <button onClick={() => setSelectedPersonSlug(null)} className="hover:text-[#1d9bf0] flex items-center gap-1 transition-colors text-lg text-left">
-                <ChevronRight className="h-4 w-4 rotate-180 flex-shrink-0" /> <span className="truncate">{personFull?.name || "Actress"}</span>
+                <ChevronRight className="h-4 w-4 rotate-180 shrink-0" /> <span className="truncate">{personFull?.name || "Actress"}</span>
               </button>
             ) : (
               "Mention Image"
             )}
           </DialogTitle>
+          <DialogDescription className="sr-only">
+            Search for an actress or album to mention an image.
+          </DialogDescription>
         </DialogHeader>
 
         <div className="p-0 flex flex-col flex-1 overflow-hidden">
@@ -81,7 +85,6 @@ export const ImagePickerModal = ({ isOpen, onClose, onSelect }: ImagePickerModal
                     onChange={(e) => setSearchQuery(e.target.value)}
                     placeholder="Search actress or album..."
                     className="pl-10 bg-[#16181c] border-[#2f3336] focus-visible:ring-[#1d9bf0] h-11"
-                    autoFocus
                   />
                 </div>
               </div>
@@ -100,18 +103,18 @@ export const ImagePickerModal = ({ isOpen, onClose, onSelect }: ImagePickerModal
                       </p>
                     )}
 
-                    {searchResults?.persons?.length > 0 && (
+                    {(searchResults?.persons?.length ?? 0) > 0 && (
                       <div className="space-y-1">
                         <h4 className="px-3 py-1 text-[11px] font-bold text-[#71767b] uppercase tracking-widest flex items-center gap-2">
                           <UserIcon className="h-3.5 w-3.5" /> ACTRESSES
                         </h4>
-                        {searchResults.persons.map((person) => (
+                        {searchResults?.persons?.map((person) => (
                           <button
                             key={person.id}
                             onClick={() => handlePersonClick(person)}
                             className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-[#16181c] transition-all text-left group"
                           >
-                            <div className="w-12 h-12 rounded-full bg-[#2f3336] flex-shrink-0 overflow-hidden border-2 border-transparent group-hover:border-[#1d9bf0]">
+                            <div className="w-12 h-12 rounded-full bg-[#2f3336] shrink-0 overflow-hidden border-2 border-transparent group-hover:border-[#1d9bf0]">
                               {person.profile_image ? (
                                 <img src={person.profile_image} alt="" className="w-full h-full object-cover" />
                               ) : (
@@ -128,18 +131,18 @@ export const ImagePickerModal = ({ isOpen, onClose, onSelect }: ImagePickerModal
                       </div>
                     )}
 
-                    {searchResults?.albums?.length > 0 && (
+                    {(searchResults?.albums?.length ?? 0) > 0 && (
                       <div className="space-y-1">
                         <h4 className="px-3 py-1 text-[11px] font-bold text-[#71767b] uppercase tracking-widest flex items-center gap-2">
                           <Folder className="h-3.5 w-3.5" /> ALBUMS
                         </h4>
-                        {searchResults.albums.map((album) => (
+                        {searchResults?.albums?.map((album) => (
                           <button
                             key={album.id}
                             onClick={() => handleAlbumClick(album)}
                             className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-[#16181c] transition-all text-left group"
                           >
-                            <div className="w-14 h-14 rounded-lg bg-[#2f3336] flex-shrink-0 overflow-hidden border border-white/5 shadow-sm group-hover:border-[#1d9bf0]/30">
+                            <div className="w-14 h-14 rounded-lg bg-[#2f3336] shrink-0 overflow-hidden border border-white/5 shadow-sm group-hover:border-[#1d9bf0]/30">
                               {album.cover_image && (
                                 <img src={album.cover_image} alt="" className="w-full h-full object-cover" />
                               )}
@@ -187,7 +190,7 @@ export const ImagePickerModal = ({ isOpen, onClose, onSelect }: ImagePickerModal
                         onClick={() => handleAlbumClick({ ...album, person_slug: personFull.slug, person_name: personFull.name })}
                         className="w-full flex items-center gap-4 p-3 rounded-xl hover:bg-[#16181c] transition-all text-left group"
                       >
-                        <div className="w-14 h-14 rounded-lg bg-[#2f3336] flex-shrink-0 overflow-hidden border border-white/5 group-hover:border-[#1d9bf0]/30">
+                        <div className="w-14 h-14 rounded-lg bg-[#2f3336] shrink-0 overflow-hidden border border-white/5 group-hover:border-[#1d9bf0]/30">
                           {album.cover_image && (
                             <img src={album.cover_image} alt="" className="w-full h-full object-cover" />
                           )}
