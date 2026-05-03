@@ -22,6 +22,7 @@ interface ChatContextType {
   user: User | null;
   nickname: string;
   onlineCount: number;
+  onlineUsers: Record<string, boolean>;
   isOpen: boolean;
   setIsOpen: (open: boolean) => void;
   activeChat: ChatThread | null;
@@ -33,6 +34,8 @@ interface ChatContextType {
   updateActivity: () => Promise<void>;
   lightboxImage: string | null;
   setLightboxImage: (url: string | null) => void;
+  replyTo: any;
+  setReplyTo: (msg: any) => void;
 }
 
 const ChatContext = createContext<ChatContextType | undefined>(undefined);
@@ -47,34 +50,55 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
   const [user, setUser] = useState<User | null>(null);
   const [nickname, setNickname] = useState("");
   const [onlineCount, setOnlineCount] = useState(0);
+  const [onlineUsers, setOnlineUsers] = useState<Record<string, boolean>>({});
   const [isOpen, setIsOpen] = useState(false);
   const [activeChat, setActiveChat] = useState<ChatThread | null>({ id: "global", type: "group", participants: [] });
   const [view, setView] = useState<"group" | "dms">("group");
   const [dms, setDms] = useState<ChatThread[]>([]);
   const [lightboxImage, setLightboxImage] = useState<string | null>(null);
+  const [replyTo, setReplyTo] = useState<any>(null);
 
   // --- 1. SESSION & CLEANUP LOGIC ---
   
   const performCleanup = useCallback(async () => {
-    console.log("[Chat] Performing session reset cleanup...");
+    console.log("[Chat] Performing Global 24h Privacy Cleanup...");
+    const batch = writeBatch(db);
+    const now = Date.now();
+    const expiryTime = now - 86400000; // 24 hours ago
+
+    // 1. Cleanup Global Messages
     const messagesRef = collection(db, "global_chat", "data", "messages");
-    const q = query(messagesRef, limit(500)); // Batch limit
-    const snapshot = await getDocs(q);
+    const msgSnapshot = await getDocs(query(messagesRef, limit(400)));
+    msgSnapshot.docs.forEach((d) => batch.delete(d.ref));
+
+    // 2. Cleanup Stale DM Threads & their messages
+    const chatsRef = collection(db, "chats");
+    const expiredChats = await getDocs(query(chatsRef, where("updatedAt", "<", Timestamp.fromMillis(expiryTime)), limit(50)));
     
-    if (!snapshot.empty) {
-      const batch = writeBatch(db);
-      snapshot.docs.forEach((d) => batch.delete(d.ref));
-      await batch.commit();
-      // Recurse if more than 500 messages
-      if (snapshot.size === 500) performCleanup();
+    for (const chatDoc of expiredChats.docs) {
+      // Delete the chat document itself
+      batch.delete(chatDoc.ref);
+      
+      // Attempt to delete sub-messages (recursive-like)
+      const subMsgs = await getDocs(collection(db, "chats", chatDoc.id, "messages"));
+      subMsgs.docs.forEach(m => batch.delete(m.ref));
     }
 
-    // Reset session timer
+    // 3. Cleanup Presence/User Data
+    const membersRef = collection(db, "global_chat", "data", "members");
+    const memberSnapshot = await getDocs(query(membersRef, limit(100)));
+    memberSnapshot.docs.forEach((d) => batch.delete(d.ref));
+
+    await batch.commit();
+
+    // Reset session timer for the next 24 hours
     const sessionRef = doc(db, "global_chat", "session");
     await setDoc(sessionRef, {
       startTime: serverTimestamp(),
       lastActivity: serverTimestamp()
     });
+    
+    console.log("[Chat] Cleanup Complete.");
   }, []);
 
   const checkSession = useCallback(async () => {
@@ -167,6 +191,7 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
         // Presence
         const memberRef = doc(db, "global_chat", "data", "members", u.uid);
+        
         const updatePresence = () => {
           setDoc(memberRef, {
             userId: u.uid,
@@ -174,11 +199,22 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
             lastSeen: serverTimestamp(),
           }, { merge: true });
         };
+
+        const removePresence = () => {
+          // Use a basic delete as fallback for window closure
+          deleteDoc(memberRef).catch(() => {});
+        };
+
         updatePresence();
         const interval = setInterval(updatePresence, 20000);
+        
+        // Immediate cleanup when closing tab
+        window.addEventListener("beforeunload", removePresence);
+        
         return () => {
           clearInterval(interval);
-          deleteDoc(memberRef).catch(() => {});
+          window.removeEventListener("beforeunload", removePresence);
+          removePresence();
         };
       }
     });
@@ -190,12 +226,19 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
     const membersRef = collection(db, "global_chat", "data", "members");
     const unsubscribe = onSnapshot(query(membersRef), (snapshot) => {
       const now = Date.now();
+      const onlineMap: Record<string, boolean> = {};
       const online = snapshot.docs.filter((d) => {
         const data = d.data();
-        if (!data.lastSeen) return true;
-        return now - data.lastSeen.toMillis() < 60000;
+        if (!data.lastSeen) {
+          onlineMap[d.id] = true;
+          return true;
+        }
+        const isOnline = now - data.lastSeen.toMillis() < 60000;
+        if (isOnline) onlineMap[d.id] = true;
+        return isOnline;
       });
       setOnlineCount(online.length);
+      setOnlineUsers(onlineMap);
     });
     return () => unsubscribe();
   }, []);
@@ -230,9 +273,9 @@ export const ChatProvider = ({ children }: { children: ReactNode }) => {
 
   return (
     <ChatContext.Provider value={{ 
-      user, nickname, onlineCount, isOpen, setIsOpen, 
+      user, nickname, onlineCount, onlineUsers, isOpen, setIsOpen, 
       activeChat, setActiveChat, view, setView, dms, startDM, updateActivity,
-      lightboxImage, setLightboxImage
+      lightboxImage, setLightboxImage, replyTo, setReplyTo
     }}>
       {children}
     </ChatContext.Provider>

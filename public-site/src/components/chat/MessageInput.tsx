@@ -8,7 +8,7 @@ import { Input } from "@/components/ui/input";
 import { ImagePickerModal } from "./ImagePickerModal";
 
 export const MessageInput = () => {
-  const { user, nickname, activeChat, updateActivity } = useChat();
+  const { user, nickname, activeChat, updateActivity, replyTo, setReplyTo } = useChat();
   const [text, setText] = useState("");
   const [selectedImage, setSelectedImage] = useState<any>(null);
   const [isPickerOpen, setIsPickerOpen] = useState(false);
@@ -25,7 +25,9 @@ export const MessageInput = () => {
         userId: user.uid,
         nickname,
         createdAt: serverTimestamp(),
+        status: "sent",
         ...(selectedImage && { imageRef: selectedImage }),
+        ...(replyTo && { replyTo: { id: replyTo.id, text: replyTo.text, nickname: replyTo.nickname } })
       };
 
       if (activeChat.id === "global") {
@@ -41,6 +43,14 @@ export const MessageInput = () => {
 
       setText("");
       setSelectedImage(null);
+      setReplyTo(null);
+      
+      // Clear typing indicator
+      if (activeChat.id !== "global") {
+        await updateDoc(doc(db, "chats", activeChat.id), {
+          [`typing.${user.uid}`]: false
+        });
+      }
     } catch (e) {
       console.error("Send failed:", e);
     } finally {
@@ -65,13 +75,28 @@ export const MessageInput = () => {
           </button>
         </div>
       )}
+
+      {replyTo && (
+        <div className="flex items-center justify-between bg-[#16181c] border-l-4 border-[#1d9bf0] p-2 rounded-r-xl border border-y-[#2f3336] border-r-[#2f3336] animate-in slide-in-from-bottom-2">
+          <div className="flex-1 min-w-0 pr-2">
+            <p className="text-[#1d9bf0] text-xs font-bold mb-0.5">{replyTo.nickname}</p>
+            <p className="text-[#71767b] text-xs truncate">{replyTo.text || "Image"}</p>
+          </div>
+          <button 
+            onClick={() => setReplyTo(null)}
+            className="p-1 hover:bg-[#2f3336] rounded-full transition-colors text-[#71767b] hover:text-[#e7e9ea]"
+          >
+            <X className="h-4 w-4" />
+          </button>
+        </div>
+      )}
       
       <form onSubmit={handleSend} className="flex items-end gap-2.5">
         <Button
           type="button"
           variant="ghost"
           size="icon"
-          className="h-11 w-11 rounded-full text-[#1d9bf0] hover:bg-[#1d9bf0]/10 flex-shrink-0 transition-colors"
+          className="h-11 w-11 rounded-full text-[#1d9bf0] hover:bg-[#1d9bf0]/10 shrink-0 transition-colors"
           onClick={() => setIsPickerOpen(true)}
         >
           <ImageIcon className="h-6 w-6" />
@@ -80,7 +105,15 @@ export const MessageInput = () => {
         <div className="flex-1 relative">
           <textarea
             value={text}
-            onChange={(e) => setText(e.target.value)}
+            onChange={(e) => {
+              setText(e.target.value);
+              // Simple typing indicator throttle
+              if (activeChat?.id !== "global" && user) {
+                updateDoc(doc(db, "chats", activeChat!.id), {
+                  [`typing.${user.uid}`]: e.target.value.length > 0
+                }).catch(() => {});
+              }
+            }}
             placeholder="Type a message..."
             className="w-full bg-[#16181c] border border-[#2f3336] focus:border-[#1d9bf0] focus:ring-0 rounded-2xl text-[15px] px-4 py-2.5 min-h-[44px] max-h-32 resize-none transition-all outline-none text-[#e7e9ea]"
             rows={1}
@@ -97,7 +130,7 @@ export const MessageInput = () => {
           type="submit"
           size="icon"
           disabled={(!text.trim() && !selectedImage) || sending}
-          className="h-11 w-11 rounded-full bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white disabled:opacity-50 flex-shrink-0 shadow-lg transition-transform active:scale-95"
+          className="h-11 w-11 rounded-full bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white disabled:opacity-50 shrink-0 shadow-lg transition-transform active:scale-95"
         >
           <Send className="h-5 w-5" />
         </Button>

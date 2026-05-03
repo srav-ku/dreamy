@@ -9,7 +9,7 @@ import { motion, AnimatePresence } from "framer-motion";
 
 export const ChatWidget = () => {
   const { 
-    isOpen, setIsOpen, onlineCount, view, setView, activeChat, setActiveChat,
+    user, isOpen, setIsOpen, onlineCount, onlineUsers, view, setView, activeChat, setActiveChat,
     lightboxImage, setLightboxImage 
   } = useChat();
   const [isLargeScreen, setIsLargeScreen] = useState(window.innerWidth >= 1024);
@@ -32,14 +32,14 @@ export const ChatWidget = () => {
   return (
     <>
       <div className={cn(
-        "z-[60] flex flex-col items-end pointer-events-none transition-all duration-300",
+        "z-60 flex flex-col items-end pointer-events-none transition-all duration-300",
         isLargeScreen ? "fixed inset-y-0 right-0 w-[450px]" : "fixed bottom-0 right-0 left-0"
       )}>
         {isOpen && (
           <div 
             className={cn(
               "pointer-events-auto h-full w-full bg-black shadow-2xl flex flex-col overflow-hidden animate-in fade-in slide-in-from-right-10 duration-300 relative border-l border-[#2f3336]",
-              !isLargeScreen && "fixed inset-0 z-[70]"
+              !isLargeScreen && "fixed inset-0 z-70"
             )}
           >
             {/* Header */}
@@ -51,11 +51,16 @@ export const ChatWidget = () => {
                   </Button>
                 )}
                 <div>
-                  <h3 className="font-bold text-lg text-[#e7e9ea] leading-none">
+                  <h3 className="font-bold text-lg text-[#e7e9ea] leading-none flex items-center gap-2">
                     {activeChat?.type === "dm" ? activeChat.otherUserNickname : "Global Chat"}
+                    {activeChat?.type === "dm" && onlineUsers[activeChat.participants.find(p => p !== user?.uid)!] && (
+                      <span className="w-2 h-2 rounded-full bg-[#10b981]" title="Online" />
+                    )}
                   </h3>
                   <p className="text-xs text-[#71767b] mt-1">
-                    {activeChat?.type === "group" ? `${onlineCount} users online` : "Direct Message"}
+                    {activeChat?.type === "group" 
+                      ? `${onlineCount} users online` 
+                      : (onlineUsers[activeChat?.participants.find(p => p !== user?.uid)!] ? "Online" : "Offline")}
                   </p>
                 </div>
               </div>
@@ -123,7 +128,7 @@ export const ChatWidget = () => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 z-[100] bg-black/95 flex flex-col backdrop-blur-md"
+            className="fixed inset-0 z-100 bg-black/95 flex flex-col backdrop-blur-md"
           >
             <div className="flex justify-end p-4 absolute top-0 left-0 right-0 z-10">
               <button
