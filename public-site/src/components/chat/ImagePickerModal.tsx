@@ -54,7 +54,7 @@ export const ImagePickerModal = ({ isOpen, onClose, onSelect }: ImagePickerModal
 
   return (
     <Dialog open={isOpen} onOpenChange={handleClose}>
-      <DialogContent className="!fixed !inset-0 !translate-x-0 !translate-y-0 sm:!left-[50%] sm:!top-[50%] sm:!-translate-x-1/2 sm:!-translate-y-1/2 w-full max-w-none sm:max-w-[500px] bg-black border-[#2f3336] p-0 overflow-hidden flex flex-col h-dvh sm:h-[600px] shadow-2xl rounded-none sm:rounded-xl border-0 sm:border z-[99999]">
+      <DialogContent className="fixed! inset-0! translate-x-0! translate-y-0! sm:left-[50%]! sm:top-[50%]! sm:-translate-x-1/2! sm:-translate-y-1/2! w-full max-w-none sm:max-w-[500px] bg-black border-[#2f3336] p-0 overflow-hidden flex flex-col h-dvh sm:h-[600px] shadow-2xl rounded-none sm:rounded-xl border-0 sm:border z-99999">
         <DialogHeader className="p-4 border-b border-[#2f3336]">
           <DialogTitle className="text-[#e7e9ea] flex items-center gap-2 pr-6">
             {selectedAlbum ? (

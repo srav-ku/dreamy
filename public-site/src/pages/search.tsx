@@ -4,6 +4,7 @@ import { useSearch } from "@/lib/api";
 import { Layout } from "@/components/layout";
 import { getProfileImageUrl, getInitials, getAlbumCoverUrl } from "@/lib/cloudinary";
 import { motion } from "framer-motion";
+import { AdBanner, NativeBanner } from "@/components/ads/AdBanner";
 
 export function Search() {
   const [location, setLocation] = useLocation();
@@ -48,6 +49,16 @@ export function Search() {
             className="w-full bg-[#202327] text-[#e7e9ea] border border-transparent focus:bg-black focus:border-[#1d9bf0] rounded-full py-3 pl-12 pr-4 outline-none transition-colors placeholder:text-[#71767b]"
           />
         </form>
+      </div>
+
+      {/* Top Banners */}
+      <div className="py-4 border-b border-[#2f3336] flex flex-col items-center">
+        <div className="hidden md:block">
+          <AdBanner id="3c109a8eda4954bacf292c4aa67f6588" width={728} height={90} />
+        </div>
+        <div className="block md:hidden">
+          <AdBanner id="14ba54072c1dc52f2147a43ebb195c20" width={320} height={50} />
+        </div>
       </div>
 
       {debouncedSearch.trim() === "" ? (
@@ -134,6 +145,16 @@ export function Search() {
               ))}
             </>
           )}
+          
+          {/* Bottom Banners */}
+          <div className="py-6 flex justify-center border-t border-[#2f3336] mt-4">
+            <div className="hidden md:block">
+              <AdBanner id="b8d6d33f1a74b42e8b83d62575af34f3" width={468} height={60} />
+            </div>
+            <div className="block md:hidden">
+              <AdBanner id="99891b9ab2c74f9cebb07347523fbab3" width={300} height={250} />
+            </div>
+          </div>
         </div>
       ) : (
         <div className="p-8 text-center text-[#71767b]">Search failed.</div>

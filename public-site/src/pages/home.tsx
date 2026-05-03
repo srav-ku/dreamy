@@ -4,6 +4,7 @@ import { useListPersons, useSearch } from "@/lib/api";
 import { Layout } from "@/components/layout";
 import { getProfileImageUrl, getInitials } from "@/lib/cloudinary";
 import { motion, AnimatePresence } from "framer-motion";
+import { AdBanner, NativeBanner } from "@/components/ads/AdBanner";
 
 export function Home() {
   const { data: persons, isLoading, isError } = useListPersons();
@@ -131,6 +132,14 @@ export function Home() {
         </div>
       </div>
 
+      {/* Top Banners - Responsive based on screen size */}
+      <div className="py-4 border-b border-[#2f3336] hidden md:flex justify-center">
+        <AdBanner id="3c109a8eda4954bacf292c4aa67f6588" width={728} height={90} />
+      </div>
+      <div className="py-4 border-b border-[#2f3336] flex md:hidden justify-center">
+        <AdBanner id="14ba54072c1dc52f2147a43ebb195c20" width={320} height={50} />
+      </div>
+
       {isLoading ? (
         <div className="p-4 space-y-4">
           {[1, 2, 3].map(i => (
@@ -173,10 +182,27 @@ export function Home() {
                   {person.bio && <p className="text-[#71767b] text-sm mt-1 line-clamp-2">{person.bio}</p>}
                 </div>
               </Link>
+              
+              {/* Insert Native Banner after the 3rd and 8th items */}
+              {(i === 2 || i === 7) && (
+                <div className="border-b border-[#2f3336] py-4 bg-[#050505]">
+                  <NativeBanner id="82a0a2fdef5eb38c821f29f505cd4584" />
+                </div>
+              )}
             </motion.div>
           ))}
         </div>
       )}
+
+      {/* Bottom Banners */}
+      <div className="py-6 flex justify-center border-t border-[#2f3336]">
+        <div className="hidden md:block">
+          <AdBanner id="b8d6d33f1a74b42e8b83d62575af34f3" width={468} height={60} />
+        </div>
+        <div className="block md:hidden">
+          <AdBanner id="99891b9ab2c74f9cebb07347523fbab3" width={300} height={250} />
+        </div>
+      </div>
 
       {persons && visibleCount < persons.length && (
         <div className="p-4 border-t border-[#2f3336]">

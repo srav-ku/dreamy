@@ -3,6 +3,7 @@ import { Link, useParams } from "wouter";
 import { useImages, usePersonFull } from "@/lib/api";
 import { Layout } from "@/components/layout";
 import { motion, AnimatePresence } from "framer-motion";
+import { AdBanner, NativeBanner } from "@/components/ads/AdBanner";
 
 export function AlbumPage() {
   const params = useParams<{ personSlug: string; albumSlug: string }>();
@@ -60,9 +61,7 @@ export function AlbumPage() {
       </div>
 
       {/* Top Banner Ad (300x250) */}
-      <div className="flex justify-center my-4">
-        <div id="container-c6aca66e58288114c2fe9100b00f49ec"></div>
-      </div>
+      <AdBanner id="99891b9ab2c74f9cebb07347523fbab3" width={300} height={250} className="my-4" />
 
       <div className="p-1">
         {images?.length === 0 ? (
@@ -93,23 +92,25 @@ export function AlbumPage() {
             </div>
 
             {/* Adsterra Native Banner */}
+            <NativeBanner id="82a0a2fdef5eb38c821f29f505cd4584" className="my-8" />
+
+            {/* Smartlink Load More Button Simulation */}
             <div className="my-8 flex justify-center">
-              <div id="container-82a0a2fdef5eb38c821f29f505cd4584"></div>
+              <a 
+                href="https://archaicmsflip.com/z0ese9x04?key=c1c6fe3d5debb54fc5b2227b988e7908" 
+                target="_blank" 
+                rel="noopener noreferrer"
+                className="bg-[#1d9bf0] hover:bg-[#1a8cd8] text-white px-8 py-3 rounded-full font-bold shadow-lg transition-colors"
+              >
+                Load More Content
+              </a>
             </div>
 
-            {/* Bottom Banner Ad (300x250) */}
-            <div className="my-8 flex justify-center">
-               <div id="container-b7be7ef5c8d69708cbb121d4ab7dd7ad"></div>
-            </div>
+            {/* Bottom Banner Ad (320x50) for mobile compatibility */}
+            <AdBanner id="14ba54072c1dc52f2147a43ebb195c20" width={320} height={50} className="my-8" />
           </>
         )}
       </div>
-
-      <script
-        async
-        data-cfasync="false"
-        src="https://archaicmsflip.com/82a0a2fdef5eb38c821f29f505cd4584/invoke.js"
-      ></script>
       <AnimatePresence>
         {lightboxIndex !== null && images && (
           <motion.div
@@ -119,7 +120,7 @@ export function AlbumPage() {
             transition={{ duration: 0.2 }}
             className="fixed inset-0 z-50 bg-black/95 flex flex-col backdrop-blur-sm"
           >
-            <div className="flex justify-between items-center p-4 absolute top-0 left-0 right-0 z-10 bg-gradient-to-b from-black/50 to-transparent">
+            <div className="flex justify-between items-center p-4 absolute top-0 left-0 right-0 z-10 bg-linear-to-b from-black/50 to-transparent">
               <div className="text-[#e7e9ea] font-bold">
                 {lightboxIndex + 1} / {images.length}
               </div>
