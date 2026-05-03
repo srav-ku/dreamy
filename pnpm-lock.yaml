@@ -298,6 +298,9 @@ importers:
       '@workspace/shared':
         specifier: workspace:*
         version: link:../shared
+      firebase:
+        specifier: ^12.12.1
+        version: 12.12.1
     devDependencies:
       '@hookform/resolvers':
         specifier: ^3.10.0

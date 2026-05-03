@@ -74,6 +74,7 @@
     "zod": "catalog:"
   },
   "dependencies": {
-    "@workspace/shared": "workspace:*"
+    "@workspace/shared": "workspace:*",
+    "firebase": "^12.12.1"
   }
 }

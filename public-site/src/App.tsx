@@ -7,6 +7,8 @@ import { PersonPage } from "@/pages/person";
 import { AlbumPage } from "@/pages/album";
 import { Search } from "@/pages/search";
 import NotFound from "@/pages/not-found";
+import { ChatProvider } from "@/components/chat/ChatProvider";
+import { ChatWidget } from "@/components/chat/ChatWidget";
 
 const queryClient = new QueryClient({
   defaultOptions: {
@@ -33,9 +35,12 @@ function App() {
   return (
     <QueryClientProvider client={queryClient}>
       <TooltipProvider>
-        <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
-          <Router />
-        </WouterRouter>
+        <ChatProvider>
+          <WouterRouter base={import.meta.env.BASE_URL.replace(/\/$/, "")}>
+            <Router />
+          </WouterRouter>
+          <ChatWidget />
+        </ChatProvider>
         <Toaster />
       </TooltipProvider>
     </QueryClientProvider>
