@@ -189,7 +189,7 @@ export const MessageList = () => {
                 </div>
                 <button 
                   onClick={() => setReplyTo(msg)}
-                  className={`opacity-0 group-hover:opacity-100 p-2 rounded-full hover:bg-[#16181c] transition-all text-[#71767b] ${isMe ? "mr-1" : "ml-1"}`}
+                  className={`opacity-100 md:opacity-0 md:group-hover:opacity-100 p-2 rounded-full hover:bg-[#16181c] transition-all text-[#71767b] ${isMe ? "mr-1" : "ml-1"}`}
                 >
                   <Reply className="h-4 w-4" />
                 </button>
